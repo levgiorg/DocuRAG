@@ -1,0 +1,22 @@
+# DocuRAG Application Configuration
+
+app_name: "DocuRAG"
+version: "1.0.0"
+debug: false
+log_level: "INFO"
+
+# File handling
+max_file_size_mb: 50
+allowed_extensions:
+  - ".pdf"
+  - ".txt"
+  - ".docx"
+  - ".md"
+
+# Storage paths
+vector_store_path: "data/vector_store"
+documents_path: "data/documents"
+
+# Conversation settings
+enable_conversation_history: true
+max_conversation_turns: 10

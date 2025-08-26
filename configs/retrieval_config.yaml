@@ -1,0 +1,14 @@
+# DocuRAG Retrieval Configuration
+
+# Document Processing
+chunk_size: 1000
+chunk_overlap: 200
+
+# Retrieval Settings
+top_k: 5
+similarity_threshold: 0.7
+max_chunks_per_doc: 3
+rerank_top_k: 10
+
+# Features
+enable_metadata_filter: true
