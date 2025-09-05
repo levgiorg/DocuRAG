@@ -650,38 +650,3 @@ class RAGEngine:
             }
         }
     
-    def test_ollama_connection(self) -> Dict[str, Any]:
-        """Test connection to Ollama API.
-        
-        Returns:
-            Dict[str, Any]: Connection test results
-        """
-        try:
-            url = f"{config.model_config.ollama_base_url}/api/tags"
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            
-            models = response.json().get("models", [])
-            model_names = [model["name"] for model in models]
-            
-            # Check if configured model is available
-            model_available = config.model_config.llm_model in model_names
-            
-            return {
-                "success": True,
-                "connected": True,
-                "available_models": model_names,
-                "configured_model": config.model_config.llm_model,
-                "model_available": model_available
-            }
-            
-        except Exception as e:
-            logger.error(f"Failed to connect to Ollama: {e}")
-            return {
-                "success": False,
-                "connected": False,
-                "error": str(e),
-                "available_models": [],
-                "configured_model": config.model_config.llm_model,
-                "model_available": False
-            }
