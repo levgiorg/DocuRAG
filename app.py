@@ -85,7 +85,9 @@ def display_sidebar():
             
             with col2:
                 st.metric("Conversations", stats["conversation"]["total_turns"])
-                st.metric("Model", config.model_config.llm_model)
+                # Show actual HuggingFace model being used
+                model_display = config.model_config.hf_model.split('/')[-1] if '/' in config.model_config.hf_model else config.model_config.hf_model
+                st.metric("Model", model_display)
         
         # Configuration
         st.subheader("⚙️ Settings")
