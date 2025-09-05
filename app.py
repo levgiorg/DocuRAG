@@ -16,6 +16,7 @@ except ImportError:
     logger = logging.getLogger(__name__)
 
 from src.rag_engine import RAGEngine
+from src.hf_response_generator import HuggingFaceResponseGenerator
 from config import config
 
 
@@ -32,32 +33,34 @@ def initialize_session_state():
 
 
 def setup_rag_engine():
-    """Initialize RAG engine if not already done."""
+    """Initialize RAG engine with HuggingFace model."""
     if st.session_state.rag_engine is None:
-        with st.spinner("Initializing RAG system..."):
+        with st.spinner("Initializing RAG system with HuggingFace model..."):
             try:
-                st.session_state.rag_engine = RAGEngine()
-                st.success("RAG system initialized successfully!")
+                # Create HuggingFace response generator
+                hf_generator = HuggingFaceResponseGenerator(
+                    model_name=config.model_config.hf_model,
+                    max_length=config.model_config.hf_max_length,
+                    device=config.model_config.hf_device
+                )
+                
+                # Initialize RAG engine with HF generator
+                st.session_state.rag_engine = RAGEngine(
+                    config=config,
+                    response_generator=hf_generator
+                )
+                st.success(f"RAG system initialized with {config.model_config.hf_model}!")
             except Exception as e:
                 st.error(f"Failed to initialize RAG system: {e}")
                 st.stop()
 
 
-def test_ollama_connection():
-    """Test and display Ollama connection status."""
+def test_model_status():
+    """Display current model information."""
     if st.session_state.rag_engine:
-        with st.spinner("Testing Ollama connection..."):
-            result = st.session_state.rag_engine.test_ollama_connection()
-        
-        if result["success"] and result["connected"]:
-            if result["model_available"]:
-                st.success(f"✅ Connected to Ollama! Model '{config.model_config.llm_model}' is available.")
-            else:
-                st.warning(f"⚠️ Connected to Ollama, but model '{config.model_config.llm_model}' is not available.")
-                st.info(f"Available models: {', '.join(result['available_models'])}")
-        else:
-            st.error(f"❌ Failed to connect to Ollama: {result.get('error', 'Unknown error')}")
-            st.info("Make sure Ollama is running and accessible at the configured URL.")
+        st.info(f"🤖 Using HuggingFace model: **{config.model_config.hf_model}**")
+        st.info(f"💾 Device: **{config.model_config.hf_device}**")
+        st.info(f"📏 Max length: **{config.model_config.hf_max_length}** tokens")
 
 
 def display_sidebar():
@@ -65,9 +68,9 @@ def display_sidebar():
     with st.sidebar:
         st.title("🔧 System Status")
         
-        # Ollama connection test
-        if st.button("Test Ollama Connection"):
-            test_ollama_connection()
+        # Model information
+        if st.button("Show Model Info"):
+            test_model_status()
         
         # System statistics
         if st.session_state.rag_engine:
@@ -367,7 +370,7 @@ def main():
     )
     
     st.title("🔍 DocuRAG - Production RAG System")
-    st.markdown("*Intelligent document processing and question-answering with Ollama & FAISS*")
+    st.markdown("*Intelligent document processing and question-answering with HuggingFace & FAISS*")
     
     # Initialize session state
     initialize_session_state()
@@ -401,7 +404,7 @@ def main():
     # Footer
     st.markdown("---")
     st.markdown(
-        "**DocuRAG** - Built with Streamlit, LangChain, FAISS, and Ollama | "
+        "**DocuRAG** - Built with Streamlit, LangChain, FAISS, and HuggingFace | "
         f"Current Model: {config.model_config.llm_model}"
     )
 
