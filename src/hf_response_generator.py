@@ -4,6 +4,7 @@ Replaces Ollama with direct HuggingFace transformers integration for better perf
 and compatibility with job assignment requirements.
 """
 
+import os
 import torch
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
@@ -16,9 +17,16 @@ except ImportError:
 
 try:
     from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+    from huggingface_hub import login
 except ImportError:
     logger.error("transformers not installed. Run: pip install transformers torch accelerate")
     raise
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    logger.warning("python-dotenv not installed. Environment variables should be set manually.")
 
 from .document_processor import DocumentChunk
 
@@ -26,7 +34,7 @@ from .document_processor import DocumentChunk
 class HuggingFaceResponseGenerator:
     """Generate responses using HuggingFace transformers."""
     
-    def __init__(self, model_name: str = "google/gemma-2b", max_length: int = 1024, device: str = "auto"):
+    def __init__(self, model_name: str = "google/gemma-3n-E2B", max_length: int = 1024, device: str = "auto"):
         """Initialize HuggingFace response generator.
         
         Args:
@@ -36,6 +44,17 @@ class HuggingFaceResponseGenerator:
         """
         self.model_name = model_name
         self.max_length = max_length
+        
+        # Authenticate with HuggingFace if token is provided
+        hf_token = os.getenv("HF_TOKEN")
+        if hf_token:
+            try:
+                login(token=hf_token)
+                logger.info("Successfully authenticated with HuggingFace")
+            except Exception as e:
+                logger.warning(f"Failed to authenticate with HuggingFace: {e}")
+        else:
+            logger.warning("No HF_TOKEN found. Some models may require authentication.")
         
         # Determine device
         if device == "auto":
@@ -48,9 +67,10 @@ class HuggingFaceResponseGenerator:
         
         try:
             # Load tokenizer and model
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name, token=hf_token)
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_name,
+                token=hf_token,
                 torch_dtype=torch.float16 if self.device.type == "cuda" else torch.float32,
                 device_map="auto" if self.device.type == "cuda" else None
             )
@@ -64,7 +84,8 @@ class HuggingFaceResponseGenerator:
                 model=self.model,
                 tokenizer=self.tokenizer,
                 device=self.device if self.device.type == "cpu" else None,
-                torch_dtype=torch.float16 if self.device.type == "cuda" else torch.float32
+                torch_dtype=torch.float16 if self.device.type == "cuda" else torch.float32,
+                token=hf_token
             )
             
             logger.info("Model loaded successfully")
