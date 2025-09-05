@@ -4,6 +4,12 @@ langchain-community>=0.0.10
 faiss-cpu>=1.7.4
 sentence-transformers>=2.2.2
 transformers>=4.36.0
+torch>=2.1.0
+accelerate>=0.24.0
+
+# FastAPI Dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
 
 # Document Processing
 PyPDF2>=3.0.1
