@@ -16,8 +16,8 @@ except ImportError:
 class ModelConfig(BaseModel):
     """Model configuration settings."""
     
-    # HuggingFace Model Settings (Primary)
-    hf_model: str = Field(default="google/gemma-3n-E2B", description="HuggingFace model name")
+    # HuggingFace Model Settings (Primary) 
+    hf_model: str = Field(default="microsoft/DialoGPT-small", description="HuggingFace model name")
     hf_max_length: int = Field(default=1024, description="HuggingFace max token length")
     hf_device: str = Field(default="auto", description="HuggingFace device (auto/cpu/cuda)")
     
