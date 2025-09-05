@@ -34,7 +34,7 @@ from .document_processor import DocumentChunk
 class HuggingFaceResponseGenerator:
     """Generate responses using HuggingFace transformers."""
     
-    def __init__(self, model_name: str = "google/gemma-3n-E2B", max_length: int = 1024, device: str = "auto"):
+    def __init__(self, model_name: str = "google/gemma-3-1b-pt", max_length: int = 1024, device: str = "auto"):
         """Initialize HuggingFace response generator.
         
         Args:
