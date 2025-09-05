@@ -287,12 +287,19 @@ Please provide a comprehensive answer based on the context above:"""
 class RAGEngine:
     """Main RAG Engine coordinating all components."""
     
-    def __init__(self, store_path: str = "data/vector_store"):
+    def __init__(self, config=None, response_generator=None, store_path: str = "data/vector_store"):
         """Initialize RAG Engine.
         
         Args:
+            config: Configuration object (defaults to global config)
+            response_generator: Custom response generator (optional)
             store_path: Path for vector store
         """
+        # Use provided config or default
+        if config is None:
+            from config import config as default_config
+            config = default_config
+        
         # Initialize components
         self.document_processor = DocumentProcessor(
             chunk_size=config.retrieval_config.chunk_size,
@@ -304,10 +311,14 @@ class RAGEngine:
             store_path=store_path
         )
         
-        self.response_generator = ResponseGenerator(
-            model_name=config.model_config.llm_model,
-            base_url=config.model_config.ollama_base_url
-        )
+        # Use provided response generator or create default Ollama one
+        if response_generator is not None:
+            self.response_generator = response_generator
+        else:
+            self.response_generator = ResponseGenerator(
+                model_name=config.model_config.llm_model,
+                base_url=config.model_config.ollama_base_url
+            )
         
         self.query_rewriter = QueryRewriter()
         
@@ -446,25 +457,40 @@ class RAGEngine:
     
     @timing_decorator
     def query(self, 
-             question: str,
+             query: str = None,  # For backward compatibility
+             question: str = None,  # Alternative parameter name
+             top_k: int = None,
+             score_threshold: float = None,
              use_conversation_history: bool = True,
              metadata_filter: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Query the RAG system with a question.
         
         Args:
-            question: User question
+            query: User question (alternative to question)
+            question: User question (alternative to query)
+            top_k: Number of chunks to retrieve (overrides config)
+            score_threshold: Minimum similarity score (overrides config)
             use_conversation_history: Whether to use conversation history
             metadata_filter: Optional metadata filters for retrieval
             
         Returns:
             Dict[str, Any]: Query results with answer and sources
         """
+        # Handle parameter compatibility
+        user_question = question or query
+        if not user_question:
+            raise ValueError("Either 'query' or 'question' parameter must be provided")
+        
+        # Use provided parameters or defaults from config
+        retrieval_top_k = top_k or config.retrieval_config.top_k
+        retrieval_threshold = score_threshold or getattr(config.retrieval_config, 'score_threshold', 0.0)
+        
         start_time = time.time()
-        logger.info(f"Processing query: {question}")
+        logger.info(f"Processing query: {user_question}")
         
         try:
             # Query rewriting for better retrieval
-            expanded_queries = self.query_rewriter.expand_query(question)
+            expanded_queries = self.query_rewriter.expand_query(user_question)
             
             # Retrieve relevant chunks using hybrid search
             self.performance_monitor.start_timer("retrieval")
@@ -473,7 +499,7 @@ class RAGEngine:
             for query_variant in expanded_queries[:3]:  # Use top 3 variants
                 chunks = self.vector_store.hybrid_search(
                     query=query_variant,
-                    top_k=config.retrieval_config.top_k,
+                    top_k=retrieval_top_k,
                     metadata_filter=metadata_filter
                 )
                 all_chunks.extend(chunks)
@@ -487,7 +513,7 @@ class RAGEngine:
             
             # Get top chunks
             ranked_chunks = sorted(chunk_dict.values(), key=lambda x: x[1], reverse=True)
-            top_chunks = [chunk for chunk, score in ranked_chunks[:config.retrieval_config.top_k]]
+            top_chunks = [chunk for chunk, score in ranked_chunks[:retrieval_top_k]]
             
             self.performance_monitor.end_timer("retrieval")
             
@@ -504,11 +530,21 @@ class RAGEngine:
             self.performance_monitor.start_timer("generation")
             conversation_context = self.conversation_history if use_conversation_history else None
             
-            answer, confidence = self.response_generator.generate_response(
-                query=question,
-                context_chunks=top_chunks,
-                conversation_history=conversation_context
-            )
+            # Check if using HuggingFace generator (has context highlighting)
+            if hasattr(self.response_generator, '_generate_highlighted_contexts'):
+                answer, confidence, highlighted_contexts = self.response_generator.generate_response(
+                    query=user_question,
+                    context_chunks=top_chunks,
+                    conversation_history=conversation_context
+                )
+            else:
+                # Fallback for Ollama generator
+                answer, confidence = self.response_generator.generate_response(
+                    query=user_question,
+                    context_chunks=top_chunks,
+                    conversation_history=conversation_context
+                )
+                highlighted_contexts = []
             self.performance_monitor.end_timer("generation")
             
             # Prepare sources information
@@ -516,7 +552,8 @@ class RAGEngine:
             for i, chunk in enumerate(top_chunks):
                 source_info = {
                     "source_id": i + 1,
-                    "document": chunk.metadata.get("source_document", "Unknown"),
+                    "source_document": chunk.metadata.get("source_document", "Unknown"),
+                    "document": chunk.metadata.get("source_document", "Unknown"),  # Keep both for compatibility
                     "page": chunk.metadata.get("page_number"),
                     "content_preview": chunk.content[:200] + "..." if len(chunk.content) > 200 else chunk.content,
                     "quality_score": chunk.quality_score,
@@ -528,7 +565,7 @@ class RAGEngine:
             response_time = time.time() - start_time
             if config.app_config.enable_conversation_history:
                 turn = ConversationTurn(
-                    question=question,
+                    question=user_question,
                     answer=answer,
                     sources=sources,
                     timestamp=datetime.now(),
@@ -550,6 +587,10 @@ class RAGEngine:
                 "response_time": response_time,
                 "chunks_retrieved": len(top_chunks)
             }
+            
+            # Add highlighted contexts if available
+            if highlighted_contexts:
+                result["highlighted_contexts"] = highlighted_contexts
             
             logger.info(f"Query completed successfully in {response_time:.2f}s")
             return result
