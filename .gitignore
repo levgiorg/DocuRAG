@@ -24,6 +24,7 @@ share/python-wheels/
 MANIFEST
 *.md
 *.pdf
+*.pyc
 
 # PyInstaller
 *.manifest

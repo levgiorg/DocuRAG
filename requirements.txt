@@ -52,3 +52,4 @@ mypy>=1.8.0
 python-dotenv>=1.0.0
 tqdm>=4.66.0
 click>=8.1.7
+timm==1.0.19
