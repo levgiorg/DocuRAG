@@ -625,7 +625,7 @@ class RAGEngine:
         Returns:
             Dict[str, Any]: System statistics
         """
-        vector_stats = self.vector_store.get_statistics()
+        vector_stats = self.vector_store.get_stats()
         
         performance_stats = {}
         for operation in ["document_processing", "vector_indexing", "retrieval", "generation"]:
