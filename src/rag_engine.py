@@ -49,12 +49,31 @@ class QueryRewriter:
         """
         # Simple query expansion (can be enhanced with NLP models)
         queries = [query]
+        query_lower = query.lower()
         
         # Add query without stopwords
-        stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
-        filtered_words = [word for word in query.lower().split() if word not in stopwords]
+        stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'we', 'used'}
+        filtered_words = [word for word in query_lower.split() if word not in stopwords]
         if len(filtered_words) > 1:
             queries.append(' '.join(filtered_words))
+        
+        # GPU/Hardware specific expansions
+        if any(term in query_lower for term in ['gpu', 'p100', 'nvidia', 'hardware', 'training']):
+            queries.extend([
+                'hardware schedule',
+                'NVIDIA P100 GPUs',
+                'training infrastructure', 
+                'machine with GPUs',
+                'training setup'
+            ])
+        
+        # Question type expansions
+        if 'how many' in query_lower:
+            # Convert "how many X" to "number of X" and "X count"
+            clean_q = query_lower.replace('how many', '').strip()
+            if clean_q:
+                queries.append(f"number of {clean_q}")
+                queries.append(f"{clean_q} count")
         
         # Add individual important terms for broader search
         important_words = [word for word in filtered_words if len(word) > 3]
