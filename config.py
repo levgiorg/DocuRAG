@@ -16,12 +16,20 @@ except ImportError:
 class ModelConfig(BaseModel):
     """Model configuration settings."""
     
-    llm_model: str = Field(default="gemma2:2b", description="Ollama model name")
+    # HuggingFace Model Settings (Primary)
+    hf_model: str = Field(default="google/gemma-3n-E2B", description="HuggingFace model name")
+    hf_max_length: int = Field(default=1024, description="HuggingFace max token length")
+    hf_device: str = Field(default="auto", description="HuggingFace device (auto/cpu/cuda)")
+    
+    # Legacy Ollama Settings (Fallback)
+    llm_model: str = Field(default="gemma2:2b", description="Ollama model name (fallback)")
+    ollama_base_url: str = Field(default="http://localhost:11434", description="Ollama API URL")
+    
+    # Common Settings
     embedding_model: str = Field(
         default="sentence-transformers/all-MiniLM-L6-v2",
         description="Embedding model name"
     )
-    ollama_base_url: str = Field(default="http://localhost:11434", description="Ollama API URL")
     max_tokens: int = Field(default=2048, description="Maximum tokens for generation")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Generation temperature")
     device: str = Field(default="auto", description="Device for embeddings (auto/cpu/cuda)")
@@ -35,6 +43,9 @@ class RetrievalConfig(BaseModel):
     top_k: int = Field(default=5, ge=1, description="Number of top chunks to retrieve")
     similarity_threshold: float = Field(
         default=0.7, ge=0.0, le=1.0, description="Minimum similarity threshold"
+    )
+    score_threshold: float = Field(
+        default=0.0, ge=0.0, le=1.0, description="Minimum retrieval score threshold"
     )
     max_chunks_per_doc: int = Field(default=3, ge=1, description="Max chunks per document")
     rerank_top_k: int = Field(default=10, ge=1, description="Initial retrieval size for reranking")

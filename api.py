@@ -71,9 +71,9 @@ async def startup_event():
         
         # Create HuggingFace response generator
         hf_generator = HuggingFaceResponseGenerator(
-            model_name=config.model.name,
-            max_length=config.model.max_tokens,
-            device="auto"
+            model_name=config.model_config.hf_model,
+            max_length=config.model_config.hf_max_length,
+            device=config.model_config.hf_device
         )
         
         # Initialize RAG engine with HuggingFace generator
@@ -119,8 +119,8 @@ async def ask_question(request: QuestionRequest):
         # Query the RAG engine
         result = rag_engine.query(
             query=request.question,
-            top_k=config.retrieval.top_k,
-            score_threshold=config.retrieval.score_threshold
+            top_k=config.retrieval_config.top_k,
+            score_threshold=config.retrieval_config.score_threshold
         )
         
         if not result:
