@@ -23,7 +23,7 @@ A Python-based Retrieval-Augmented Generation (RAG) system for document question
 ### Installation
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/levgiorg/DocuRAG
 cd DocuRAG
 pip install -r requirements.txt
 ```
