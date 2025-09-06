@@ -1,6 +1,6 @@
 # DocuRAG
 
-A Python-based Retrieval-Augmented Generation (RAG) system for document question-answering. Built with FastAPI, HuggingFace transformers, and FAISS vector search.
+A Python-based Retrieval-Augmented Generation (RAG) system for document question-answering. Built with FastAPI, HuggingFace transformers, and FAISS vector search. Includes both REST API and web interface.
 
 ## Features
 
@@ -8,10 +8,10 @@ A Python-based Retrieval-Augmented Generation (RAG) system for document question
 - FAISS-based vector indexing with persistent storage
 - HuggingFace transformer models for embeddings and generation
 - FastAPI REST API with exact specification compliance
+- Streamlit web interface for interactive document management
 - Context highlighting in responses
 - Dynamic document uploading
 - Comprehensive logging and monitoring
-- Optional Streamlit web interface
 
 ## Requirements
 
